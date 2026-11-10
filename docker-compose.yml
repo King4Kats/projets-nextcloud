@@ -1,0 +1,38 @@
+# Démo de l'appli « Projets » : Nextcloud 34 + l'appli, avec des comptes et des projets fictifs.
+#
+#   docker compose up --build        (le premier lancement prend 1 à 3 minutes)
+#
+#   Appli : http://localhost:8160/apps/temonia_saisie/
+#   Comptes : voir README.md. Repartir de zéro : docker compose down -v
+services:
+  nextcloud:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: projets-nextcloud-demo:latest
+    container_name: projets-nc
+    ports:
+      - "8160:80"
+    environment:
+      # SQLite : une base dans un simple fichier, parfait pour une démo (en production :
+      # PostgreSQL ou MariaDB).
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: projets2026
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost 127.0.0.1 nextcloud
+    volumes:
+      - nc_data:/var/www/html
+    restart: unless-stopped
+
+  # Petit conteneur Python qui attend Nextcloud, crée les projets d'exemple par l'API (comme le
+  # ferait un utilisateur), puis s'arrête. Il ne refait rien si des projets existent déjà.
+  demo:
+    image: python:3.12.8-alpine3.21
+    depends_on: [nextcloud]
+    volumes:
+      - ./demo:/demo:ro
+    command: ["python", "/demo/remplir.py", "http://nextcloud", "--attendre"]
+    restart: "no"
+
+volumes:
+  nc_data:

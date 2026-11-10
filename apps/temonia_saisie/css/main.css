@@ -1,0 +1,646 @@
+/* SPDX-FileCopyrightText: 2026 Flavien Auvray
+ * SPDX-License-Identifier: AGPL-3.0-or-later */
+/* l'association — Espace équipe. Design d'après Claude Design (Wireframes Nextcloud).
+   Tokens de couleur mappés sur le thème Nextcloud → s'adapte automatiquement clair ET sombre.
+   On ne code jamais une couleur en dur : on passe par ces variables (ou celles de NC). */
+/* Variables --sp-* sur #tp-app : à ce niveau du DOM, Nextcloud expose les BONNES
+   valeurs de thème (clair OU sombre selon le réglage). Sur :root, au contraire,
+   NC laisse ses valeurs par défaut (sombres) → fond noir en thème clair.
+   Les modales sont donc ajoutées DANS #tp-app (root.appendChild) pour hériter d'ici. */
+#tp-app {
+    --sp-acc: var(--color-primary-element, #002B5C);   /* couleur d'accent (bleu marine l'association) */
+    --sp-red: #C4362A;                                  /* rouge blocage / suppression */
+    --sp-line: var(--color-border);                     /* traits, bordures */
+    --sp-tx2: var(--color-text-maxcontrast);            /* texte secondaire (gris) */
+    --sp-chip: var(--color-background-dark);            /* fond des puces / avatars neutres */
+    --sp-grp: var(--color-background-hover);            /* fond des lignes de groupe (phases) */
+    --sp-sel: var(--color-background-dark);             /* fond des lignes sélectionnées / total */
+    --sp-side: var(--color-main-background);            /* fond de la barre latérale et des en-têtes de table */
+    --sp-rowsel: color-mix(in srgb, var(--color-primary-element, #002B5C) 8%, transparent);
+    /* SCROLL : l'app est un conteneur de hauteur fixe (viewport − en-tête NC ≈ 50px)
+       qui défile en interne. Robuste quel que soit le conteneur NC parent (certains
+       ont overflow:hidden), là où height:100% ou min-height figeaient le défilement. */
+    height: calc(100vh - 50px); overflow-y: auto; overflow-x: hidden;
+    /* LARGEUR : remplir TOUTE la largeur du conteneur NC, qu'il soit en bloc (width:100%)
+       ou en flex (flex:1). Sans ça, l'app peut se réduire à la largeur de son contenu
+       (≈ moitié gauche de l'écran). */
+    width: 100%; flex: 1 1 auto; box-sizing: border-box;
+    max-width: none; margin: 0; padding: 0;
+    background: var(--color-main-background);
+}
+
+.sp-layout { display: flex; align-items: stretch; min-height: 100%; background: var(--color-main-background); }
+
+/* Sidebar */
+.sp-side { width: 196px; flex: 0 0 auto; border-right: 1px solid var(--sp-line); padding: 18px 0; display: flex; flex-direction: column; gap: 22px; background: var(--sp-side); position: sticky; top: 0; align-self: flex-start; max-height: 100%; overflow-y: auto; }
+.sp-brand { display: flex; align-items: center; gap: 9px; padding: 0 18px; }
+.sp-brand__logo { width: 20px; height: 20px; border-radius: 4px; display: block; flex: 0 0 auto; }
+.sp-brand__dot { width: 20px; height: 20px; border-radius: 5px; background: var(--sp-acc); flex: 0 0 auto; }
+.sp-brand__t { font-size: 13px; font-weight: 600; }
+.sp-navgrp { display: flex; flex-direction: column; gap: 1px; }
+.sp-navlbl { padding: 0 18px; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--sp-tx2); margin-bottom: 6px; }
+.sp-navitem { display: flex; align-items: center; gap: 9px; padding: 7px 18px; cursor: pointer; font-size: 13.5px; color: var(--color-main-text); border-radius: 0 6px 6px 0; margin-right: 10px; }
+.sp-navitem:hover { background: var(--color-background-hover); }
+.sp-navitem--on { background: var(--sp-sel); font-weight: 600; }
+.sp-navitem--vue { color: var(--sp-tx2); }
+.sp-navdot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+.sp-navtxt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.sp-navflag { width: 7px; height: 7px; border-radius: 50%; background: var(--sp-red); flex: 0 0 auto; }
+.sp-navempty { padding: 0 18px; font-size: 12px; color: var(--sp-tx2); }
+
+/* Main */
+.sp-main { flex: 1; min-width: 0; padding: 26px 30px 40px; }
+.sp-head { margin-bottom: 20px; }
+.sp-crumb { font-size: 12.5px; color: var(--sp-tx2); margin-bottom: 8px; display: flex; gap: 7px; align-items: center; }
+.sp-crumb__cur { color: var(--color-main-text); }
+.sp-head__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.sp-title { font-size: 21px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.sp-sub { font-size: 12.5px; color: var(--sp-tx2); margin-top: 4px; }
+.sp-ctrls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+.sp-ctrl { display: flex; align-items: center; height: 32px; border: 1px solid var(--sp-line); border-radius: 7px; background: var(--color-main-background); font-size: 12.5px; color: var(--sp-tx2); cursor: pointer; padding: 0; }
+.sp-ctrl--check { gap: 8px; padding: 0 12px; }
+.sp-ctrl--on { color: var(--color-main-text); }
+.sp-box { width: 14px; height: 14px; border: 1px solid var(--sp-line); border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; flex: 0 0 auto; }
+.sp-box--on { background: var(--sp-acc); border-color: var(--sp-acc); }
+.sp-ctrl--grp { overflow: hidden; }
+.sp-ctrl__k { padding: 0 12px; line-height: 30px; color: var(--sp-tx2); border-right: 1px solid var(--sp-line); background: var(--color-background-hover); }
+.sp-ctrl__v { padding: 0 12px; line-height: 30px; font-weight: 500; color: var(--color-main-text); }
+.sp-ctrl__caret { padding: 0 10px 0 0; color: var(--sp-tx2); font-size: 9px; }
+.sp-statfaites { font-size: 12px; color: var(--sp-tx2); }
+
+/* Table */
+.sp-table { border: 1px solid var(--sp-line); border-radius: 8px; overflow-x: auto; }
+.sp-hrow, .sp-row { display: grid; grid-template-columns: minmax(200px, 1fr) 112px 64px 66px 66px 136px; align-items: center; padding: 0 18px; min-width: 680px; }
+.sp-hrow { height: 32px; background: var(--sp-side); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sp-tx2); border-bottom: 1px solid var(--sp-line); }
+.sp-h--num { text-align: right; padding-right: 10px; }
+.sp-row { min-height: 38px; border-top: 1px solid var(--sp-line); cursor: pointer; }
+.sp-row:first-child { border-top: none; }
+.sp-row:hover { background: var(--color-background-hover); }
+.sp-row--parent { font-weight: 500; }
+.sp-row--phase { min-height: 40px; background: var(--sp-grp); }
+.sp-row--phase:hover { background: var(--color-background-dark); }
+.sp-row--bloc { background: var(--sp-rowsel); box-shadow: inset 2px 0 0 var(--sp-acc); }
+.sp-row--total { min-height: 42px; background: var(--sp-side); border-top: 1px solid var(--sp-tx2); font-weight: 600; cursor: default; }
+.sp-row--total:hover { background: var(--sp-side); }
+.sp-row--total .sp-num { font-weight: 600; color: var(--color-main-text); }
+.sp-sujet { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sp-caret { width: 12px; color: var(--sp-tx2); font-size: 9px; flex: 0 0 auto; text-align: center; }
+.sp-tname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.sp-tname--parent { font-weight: 500; }
+.sp-pname { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-done { color: var(--sp-tx2); text-decoration: line-through; }
+.sp-chip { font-size: 11px; color: var(--sp-tx2); border: 1px solid var(--sp-line); border-radius: 10px; padding: 1px 8px; background: var(--color-main-background); flex: 0 0 auto; white-space: nowrap; }
+.sp-bdot { width: 6px; height: 6px; border-radius: 50%; background: var(--sp-red); flex: 0 0 auto; }
+.sp-blbl { font-size: 11px; color: var(--sp-red); flex: 0 0 auto; }
+.sp-c { display: flex; align-items: center; }
+.sp-stat { gap: 8px; color: var(--sp-tx2); font-size: 12.5px; }
+.sp-sdot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+.sp-cb { width: 15px; height: 15px; border: 1px solid var(--sp-line); border-radius: 3px; flex: 0 0 auto; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; }
+.sp-cb--on { background: var(--sp-acc); border-color: var(--sp-acc); }
+.sp-ava { width: 22px; height: 22px; border-radius: 50%; background: var(--sp-chip); color: var(--sp-tx2); font-size: 9.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.sp-ava--none { background: transparent; }
+/* Avatar « groupe » (assignation à un groupe Nextcloud) : pastille carrée teintée avec 👥. */
+.sp-ava--grp { background: color-mix(in srgb, var(--sp-acc) 16%, transparent); border-radius: 6px; font-size: 12px; }
+.sp-num { justify-content: flex-end; padding-right: 10px; font-size: 12.5px; color: var(--sp-tx2); font-variant-numeric: tabular-nums; }
+.sp-av { gap: 10px; min-width: 0; overflow: hidden; }
+.sp-av__rp { font-size: 11.5px; color: var(--sp-tx2); white-space: nowrap; flex: 0 0 auto; font-variant-numeric: tabular-nums; width: 78px; text-align: right; }
+.sp-av__bar { flex: 1 1 auto; min-width: 24px; height: 4px; border-radius: 2px; background: var(--sp-chip); overflow: hidden; }
+.sp-av__fill { height: 100%; max-width: 100%; border-radius: 2px; background: var(--sp-acc); }
+.sp-av__fill.sp-over { background: var(--sp-red); }
+.sp-av__pct { font-size: 11.5px; color: var(--sp-tx2); min-width: 40px; text-align: right; flex: 0 0 auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sp-over { color: var(--sp-red); }
+
+/* Cards (blocages / mes tâches) */
+.sp-cards { display: flex; flex-direction: column; gap: 8px; }
+.sp-grouplbl { font-size: 12px; font-weight: 600; color: var(--sp-tx2); margin: 16px 0 8px; }
+.sp-card { border: 1px solid var(--sp-line); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+.sp-card:hover { background: var(--color-background-hover); }
+.sp-card--bloc { box-shadow: inset 2px 0 0 var(--sp-red); }
+.sp-card__top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.sp-card__proj { font-size: 12px; font-weight: 600; color: var(--sp-tx2); }
+.sp-card__t { font-size: 14px; }
+.sp-card__m { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--sp-tx2); margin-top: 5px; }
+
+.sp-empty { color: var(--sp-tx2); text-align: center; padding: 50px 0; }
+.sp-err { color: var(--sp-red); font-size: 13px; }
+.sp-muted { color: var(--sp-tx2); font-size: 13px; }
+
+/* Panneau détail (droite) */
+.sp-pnl__wrap { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px 16px; background: rgba(0, 0, 0, .45); backdrop-filter: blur(2px); }
+.sp-pnl { width: min(560px, 100%); max-height: 88vh; background: var(--color-main-background); border: 1px solid var(--sp-line); border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .38); display: flex; flex-direction: column; overflow: hidden; }
+/* Variante PANNEAU LATÉRAL DROIT (détail d'une tâche, fidèle Claude Design) : le voile aligne le
+   panneau à droite et sur toute la hauteur ; le panneau perd ses coins/marge et glisse depuis la droite. */
+.sp-pnl__wrap--right { align-items: stretch; justify-content: flex-end; padding: 0; background: rgba(0, 0, 0, .32); }
+.sp-pnl--side { width: min(460px, 100%); max-height: none; height: 100%; border: none; border-left: 1px solid var(--sp-line); border-radius: 0; box-shadow: -14px 0 44px rgba(0, 0, 0, .28); animation: sp-slidein .2s cubic-bezier(.2, .7, .3, 1); }
+@keyframes sp-slidein { from { transform: translateX(34px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sp-pnl__head { padding: 16px 22px 14px; border-bottom: 1px solid var(--sp-line); display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto; }
+.sp-pnl__crumbrow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sp-pcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 11.5px; color: var(--sp-tx2); }
+.sp-pcrumb__cur { color: var(--color-main-text); }
+.sp-pcrumb__s { opacity: .5; }
+.sp-pnl__x { background: transparent; border: none; color: var(--sp-tx2); font-size: 14px; cursor: pointer; padding: 3px 7px; border-radius: 6px; flex: 0 0 auto; }
+.sp-pnl__x:hover { background: var(--color-background-hover); }
+.sp-pnl__titlerow { display: flex; align-items: flex-start; gap: 11px; }
+.sp-pnl__title { margin: 0; font-size: 17.5px; font-weight: 600; }
+.sp-cb--18 { width: 16px; height: 16px; margin-top: 3px; font-size: 10px; }
+.sp-blocbanner { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--sp-red) 45%, transparent); background: color-mix(in srgb, var(--sp-red) 12%, transparent); border-radius: 6px; }
+.sp-blocbanner__t { font-size: 12.5px; color: var(--sp-red); flex: 1; }
+.sp-blocbanner__b { font-size: 11.5px; color: var(--sp-red); border: 1px solid color-mix(in srgb, var(--sp-red) 45%, transparent); background: transparent; border-radius: 5px; padding: 3px 9px; cursor: pointer; flex: 0 0 auto; }
+.sp-pnl__body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.sp-psec { padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; border-bottom: 1px solid var(--sp-line); }
+.sp-psec--form { background: var(--color-background-hover); gap: 10px; }
+.sp-psec--comm { gap: 12px; border-bottom: none; padding-bottom: 26px; }
+.sp-pfield { display: flex; flex-direction: column; gap: 7px; }
+.sp-plbl { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sp-tx2); }
+.sp-pgrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sp-pseg { display: flex; border: 1px solid var(--sp-line); border-radius: 6px; overflow: hidden; width: fit-content; }
+.sp-pseg__b { padding: 6px 15px; background: transparent; border: none; border-left: 1px solid var(--sp-line); color: var(--sp-tx2); font-size: 12.5px; cursor: pointer; display: flex; align-items: center; gap: 7px; }
+.sp-pseg__b:first-child { border-left: none; }
+.sp-pseg__b--on { background: var(--sp-acc); color: #fff; }
+.sp-pseg__dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; opacity: .7; }
+.sp-passignee, .sp-pech { display: flex; align-items: center; gap: 9px; font-size: 13.5px; }
+.sp-pech__r { font-size: 11px; color: var(--sp-tx2); }
+.sp-ava--24 { width: 24px; height: 24px; font-size: 10px; }
+.sp-pbarhead { display: flex; align-items: baseline; justify-content: space-between; }
+.sp-pbar { height: 4px; }
+.sp-pperso { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+.sp-pperso__n { flex: 1; }
+.sp-pperso__h { color: var(--sp-tx2); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.sp-pdesc { margin: 0; color: var(--sp-tx2); line-height: 1.5; white-space: pre-wrap; }
+.sp-loghgrid { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 9px; }
+.sp-loghgrid input { min-width: 0; width: 100%; }
+.sp-psec--form input { min-width: 0; width: 100%; box-sizing: border-box; }
+.sp-psec--form input[type=text] { width: 100%; }
+.sp-pbtn { background: var(--sp-acc); color: #fff; border: none; border-radius: 6px; padding: 7px 15px; font-size: 12.5px; cursor: pointer; align-self: flex-start; }
+.sp-pcm { display: flex; gap: 11px; }
+.sp-pcm__b { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.sp-pcm__h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sp-pcm__a { font-weight: 500; }
+.sp-pcm__ago { font-size: 11px; color: var(--sp-tx2); }
+.sp-pcm__tag { font-size: 11px; font-weight: 600; color: var(--sp-red); }
+.sp-pcm__tag.sp-ok { color: #46ba61; }
+.sp-pcm__x { color: var(--sp-tx2); white-space: pre-wrap; }
+.sp-pcm--bloc { flex: 1; padding: 11px; border: 1px solid color-mix(in srgb, var(--sp-red) 45%, transparent); background: color-mix(in srgb, var(--sp-red) 10%, transparent); border-radius: 6px; }
+.sp-pcm__pill { font-size: 10.5px; color: var(--sp-red); border: 1px solid color-mix(in srgb, var(--sp-red) 45%, transparent); border-radius: 9px; padding: 1px 8px; }
+.sp-pcm__pill.sp-ok { color: #46ba61; border-color: color-mix(in srgb, #46ba61 45%, transparent); }
+.sp-pcm__act { display: flex; align-items: center; gap: 14px; font-size: 11.5px; margin-top: 2px; }
+.sp-pcm__lever { color: var(--sp-red); cursor: pointer; }
+.sp-cform { display: flex; flex-direction: column; gap: 9px; padding-top: 4px; }
+.sp-cinput { width: 100%; border: 1px solid var(--sp-line); border-radius: 6px; padding: 8px 11px; font: inherit; font-size: 12.5px; background: var(--color-main-background); color: var(--color-main-text); }
+.sp-cformrow { display: flex; align-items: center; justify-content: space-between; }
+.sp-chk { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--sp-tx2); cursor: pointer; }
+.sp-chk input { width: 14px; height: 14px; }
+.sp-pbtn2 { border: 1px solid var(--sp-line); background: transparent; border-radius: 6px; padding: 5px 13px; font-size: 12.5px; color: var(--color-main-text); cursor: pointer; }
+.sp-ta { width: 100%; resize: vertical; border-radius: 8px; padding: 8px; border: 1px solid var(--sp-line); font: inherit; background: var(--color-main-background); color: var(--color-main-text); }
+@media (max-width: 760px) { .sp-pgrid2 { grid-template-columns: 1fr; } }
+
+/* Mes heures */
+/* Lien « Saisir mes heures › » du menu (vers l'écran Heures) : même allure qu'une entrée de menu. */
+#tp-app a.sp-navlink { text-decoration: none; color: var(--sp-acc); font-weight: 600; }
+.sp-add { border: 1px solid var(--sp-line); border-radius: 12px; padding: 14px; margin-bottom: 20px; max-width: 560px; }
+.sp-add select, .sp-add input { width: 100%; }
+#sp-tache-wrap select { width: 100%; margin-bottom: 8px; }
+.sp-daysep { display: flex; align-items: baseline; justify-content: space-between; margin: 16px 2px 6px; max-width: 560px; }
+.sp-daysep__d { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+.sp-daysep__s { font-size: 13px; color: var(--sp-acc); font-weight: 600; }
+.sp-hrow2 { display: flex; align-items: center; gap: 10px; border: 1px solid var(--sp-line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; max-width: 560px; }
+.sp-hrow2__b { flex: 1; min-width: 0; }
+.sp-hrow2__t { font-size: 14px; }
+.sp-hrow2__m { font-size: 12px; color: var(--sp-tx2); margin-top: 1px; }
+.sp-hedit { width: 72px; text-align: right; }
+/* .sp-iconbtn est défini plus bas (section admin) : taille et survol y sont gérés une seule fois. */
+
+@media (max-width: 720px) {
+    .sp-side { width: 156px; }
+    .sp-main { padding: 20px 16px 40px; }
+}
+
+/* ===== Admin : gestion (sidebar + actions + modales) ===== */
+.sp-navadd { padding: 7px 18px; margin-right: 10px; font-size: 12.5px; color: var(--sp-acc); cursor: pointer; border-radius: 0 6px 6px 0; }
+.sp-navadd:hover { background: var(--color-background-hover); }
+.sp-back { background: transparent; border: none; cursor: pointer; font-size: 13px; color: var(--sp-acc); padding: 0 0 6px; }
+.sp-hrow--mng, .sp-row--mng { grid-template-columns: minmax(140px, 1fr) 100px 34px 220px 96px; min-width: 630px; }
+.sp-rowact { display: flex; align-items: center; gap: 2px; justify-content: flex-end; min-width: 0; overflow: hidden; }
+.sp-iconbtn { width: 24px; height: 24px; border: none; background: transparent; border-radius: 6px; color: var(--sp-tx2); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; padding: 0; }
+/* Taille forcée dans le tableau de gestion : bat les styles de bouton par défaut de Nextcloud (width:130px, min-height:44px, padding) qui élargiraient les icônes et les feraient déborder sur la colonne Prévu. Spécificité 0,2,0 > celle de NC (0,1,1). */
+.sp-rowact .sp-iconbtn { width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; box-sizing: border-box; flex: 0 0 auto; }
+.sp-iconbtn:hover { background: var(--color-background-hover); color: var(--color-main-text); }
+.sp-iconbtn--danger:hover { background: color-mix(in srgb, var(--sp-red) 14%, transparent); color: var(--sp-red); }
+.sp-ministatut { font-size: 11.5px; height: 26px; border-radius: 6px; border: 1px solid var(--sp-line); background: var(--color-main-background); color: var(--color-main-text); max-width: 96px; min-width: 0; }
+.sp-addbtn { background: var(--sp-acc); color: #fff; border: none; border-radius: 7px; padding: 7px 13px; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.sp-addbtn:hover { opacity: .92; }
+.sp-ghostbtn { background: transparent; color: var(--sp-tx2); border: 1px solid var(--sp-line); border-radius: 7px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; }
+.sp-ghostbtn:hover { background: var(--color-background-hover); color: var(--color-main-text); }
+.sp-pnl--form { max-width: 480px; height: auto; }
+.sp-modalbody { padding: 20px 22px 22px; overflow-y: auto; }
+.sp-mform { display: flex; flex-direction: column; gap: 14px; }
+.sp-mrow { display: flex; gap: 12px; }
+.sp-mfield { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.sp-mfield > label { font-size: 10px; color: var(--sp-tx2); text-transform: uppercase; letter-spacing: .05em; }
+.sp-mfield input, .sp-mfield select { width: 100%; box-sizing: border-box; }
+.sp-mfield input[type=color] { width: 46px; height: 34px; padding: 2px; }
+.sp-modalbtns { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 4px; }
+.sp-secblock { margin-bottom: 18px; }
+.sp-secblock__lbl { font-size: 10px; font-weight: 600; color: var(--sp-tx2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.sp-memchips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.sp-memchip { display: inline-flex; align-items: center; gap: 4px; background: var(--color-main-background); border: 1px solid var(--sp-line); border-radius: 16px; padding: 3px 4px 3px 10px; font-size: 12px; }
+.sp-memchip__x { background: transparent; border: none; cursor: pointer; font-size: 14px; color: var(--sp-tx2); line-height: 1; padding: 0 4px; }
+.sp-memchip__x:hover { color: var(--sp-red); }
+.sp-memadd { display: flex; gap: 8px; }
+.sp-memadd select { font-size: 12px; border-radius: 6px; }
+.sp-tname--link { cursor: pointer; }
+.sp-tname--link:hover { text-decoration: underline; }
+/* ===== Historique ===== */
+.sp-histlist { display: flex; flex-direction: column; gap: 12px; }
+.sp-hevt { display: flex; gap: 11px; }
+.sp-hevt__b { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.sp-hevt__h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sp-hevt__x { font-size: 13px; color: var(--sp-tx2); }
+.sp-histbadge { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--sp-tx2); border: 1px solid var(--sp-line); border-radius: 5px; padding: 0 6px; }
+.sp-psec--comm .sp-hevt { margin-top: 2px; }
+
+/* ===== Tableau de bord à widgets (grille libre déplaçable/redimensionnable) ===== */
+.sp-ghostbtn--on { background: var(--sp-acc); color: #fff; border-color: var(--sp-acc); }
+.sp-dashgrid { position: relative; width: 100%; min-width: 700px; }
+.sp-dashgrid--edit { outline: 1px dashed var(--sp-line); border-radius: 12px; background: color-mix(in srgb, var(--sp-acc) 3%, transparent); }
+.sp-widget { position: absolute; display: flex; flex-direction: column; background: var(--color-main-background); border: 1px solid var(--sp-line); border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, .06); overflow: hidden; box-sizing: border-box; }
+.sp-widget__h { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px 6px; flex: 0 0 auto; }
+.sp-widget__t { font-size: 13px; font-weight: 600; color: var(--color-main-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Sélecteur à 2 classes (0,2,0) pour battre la règle globale de bouton Nextcloud
+   (width:130px; min-height:44px, spécificité 0,1,1) qui élargirait ce petit ✕. */
+.sp-widget__h .sp-widget__x { width: auto; min-width: 0; height: auto; min-height: 0; background: transparent; border: none; cursor: pointer; color: var(--sp-tx2); font-size: 12px; padding: 2px 6px; border-radius: 6px; flex: 0 0 auto; }
+.sp-widget__h .sp-widget__x:hover { background: color-mix(in srgb, var(--sp-red) 14%, transparent); color: var(--sp-red); }
+.sp-widget__b { flex: 1; min-height: 0; overflow: auto; padding: 4px 14px 12px; }
+.sp-widget__rz { position: absolute; right: 3px; bottom: 3px; width: 14px; height: 14px; cursor: nwse-resize; border-right: 2px solid var(--sp-tx2); border-bottom: 2px solid var(--sp-tx2); border-bottom-right-radius: 4px; opacity: .4; }
+.sp-widget__rz:hover { opacity: .85; }
+.sp-widget--drag { box-shadow: 0 12px 34px rgba(0, 0, 0, .28); opacity: .97; z-index: 20; user-select: none; }
+.sp-dashgrid--edit .sp-widget__h { cursor: move; }
+/* Tuiles KPI : fond plein coloré, gros chiffre */
+.sp-widget--kpi { border: none; color: #fff; }
+.sp-widget--kpi .sp-widget__t { color: rgba(255, 255, 255, .85); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.sp-widget--kpi .sp-widget__x { color: #fff; }
+.sp-widget--kpi .sp-widget__x:hover { background: rgba(255, 255, 255, .2); color: #fff; }
+.sp-widget--kpi .sp-widget__b { display: flex; flex-direction: column; justify-content: center; padding-top: 0; overflow: hidden; }
+.sp-kpi__v { font-size: 30px; font-weight: 700; line-height: 1.05; }
+.sp-kpi__s { font-size: 11.5px; opacity: .85; margin-top: 4px; }
+/* Barres horizontales */
+.sp-wbars { display: flex; flex-direction: column; gap: 9px; }
+.sp-wbar { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+.sp-wbar__l { width: 34%; flex: 0 0 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sp-tx2); }
+.sp-wbar__track { flex: 1; height: 8px; background: var(--sp-chip); border-radius: 5px; overflow: hidden; }
+.sp-wbar__fill { height: 100%; border-radius: 5px; min-width: 2px; }
+.sp-wbar__v { flex: 0 0 auto; min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-main-text); }
+/* Donut */
+.sp-donut { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.sp-donut__svg { width: 120px; height: 120px; flex: 0 0 auto; }
+.sp-donut__c { font-size: 22px; font-weight: 700; fill: var(--color-main-text); }
+.sp-donut__leg { display: flex; flex-direction: column; gap: 7px; font-size: 12px; min-width: 120px; flex: 1; }
+.sp-donut__li { display: flex; align-items: center; gap: 8px; }
+.sp-donut__dot { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; }
+.sp-donut__ll { flex: 1; color: var(--sp-tx2); }
+.sp-donut__v { font-variant-numeric: tabular-nums; font-weight: 600; }
+/* Courbe d'aire */
+.sp-line { display: flex; flex-direction: column; height: 100%; }
+.sp-line__svg { flex: 1; width: 100%; min-height: 60px; }
+.sp-line__area { fill: color-mix(in srgb, var(--sp-acc) 18%, transparent); stroke: none; }
+.sp-line__stroke { stroke: var(--sp-acc); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sp-line__x { display: flex; justify-content: space-between; font-size: 11px; color: var(--sp-tx2); margin-top: 4px; }
+/* Listes */
+.sp-wlist { display: flex; flex-direction: column; }
+.sp-wli { display: flex; align-items: center; gap: 9px; padding: 7px 2px; border-top: 1px solid var(--sp-line); cursor: pointer; }
+.sp-wli:first-child { border-top: none; }
+.sp-wli:hover { background: var(--color-background-hover); }
+.sp-wli__b { flex: 1; min-width: 0; }
+.sp-wli__t { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-wli__m { font-size: 11.5px; color: var(--sp-tx2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-wact { display: flex; gap: 9px; padding: 8px 2px; border-top: 1px solid var(--sp-line); }
+.sp-wact:first-child { border-top: none; }
+.sp-wact__b { flex: 1; min-width: 0; }
+.sp-wact__h { display: flex; gap: 8px; align-items: baseline; }
+.sp-wact__x { font-size: 12.5px; color: var(--sp-tx2); }
+/* Catalogue d'ajout de widget */
+.sp-catalog { display: flex; flex-direction: column; gap: 8px; }
+.sp-catitem { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--sp-line); border-radius: 8px; font-size: 13px; }
+/* Le titre prend la place, les boutons (filtre, ✕) restent compacts à droite. */
+.sp-widget__h .sp-widget__t { flex: 1; min-width: 0; }
+/* Bouton « filtrer » — sélecteur 2 classes (0,2,0) pour neutraliser le width:130px global de NC. */
+.sp-widget__h .sp-widget__f { width: auto; min-width: 0; height: auto; min-height: 0; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent; border: none; cursor: pointer; color: var(--sp-tx2); font-size: 11px; padding: 2px 7px; border-radius: 10px; flex: 0 1 auto; }
+.sp-widget__h .sp-widget__f:hover { background: var(--color-background-hover); color: var(--color-main-text); }
+.sp-widget__h .sp-widget__f--on { background: color-mix(in srgb, var(--sp-acc) 12%, transparent); color: var(--sp-acc); }
+.sp-widget--kpi .sp-widget__h .sp-widget__f { color: rgba(255, 255, 255, .85); }
+.sp-widget--kpi .sp-widget__h .sp-widget__f:hover { background: rgba(255, 255, 255, .18); color: #fff; }
+.sp-widget--kpi .sp-widget__h .sp-widget__f--on { background: rgba(255, 255, 255, .22); color: #fff; }
+/* Vue empilée (mobile / étroit) : 1 colonne, widgets en flux normal, non déplaçables. */
+.sp-dashgrid--stacked { position: static; min-width: 0; display: flex; flex-direction: column; gap: 12px; outline: none; background: none; }
+.sp-dashgrid--stacked .sp-widget { position: static; width: 100%; left: auto; top: auto; }
+
+/* ===== Toasts + modale de confirmation (remplacent alert/confirm du navigateur) ===== */
+.sp-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(12px); background: var(--color-main-text); color: var(--color-main-background); font-size: 13px; padding: 10px 16px; border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, .28); z-index: 4000; opacity: 0; transition: opacity .25s, transform .25s; max-width: 90vw; }
+.sp-toast--in { opacity: 1; transform: translateX(-50%) translateY(0); }
+.sp-toast--err { background: var(--sp-red); color: #fff; }
+.sp-dangerbtn { background: var(--sp-red); color: #fff; border: none; border-radius: 7px; padding: 7px 13px; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.sp-dangerbtn:hover { opacity: .92; }
+.sp-confirm { display: flex; flex-direction: column; gap: 16px; }
+.sp-confirm__t { margin: 0; font-size: 14px; line-height: 1.5; color: var(--color-main-text); }
+/* Petits correctifs cosmétiques : séparateur de fil d'Ariane + libellé de section « Mes heures ». */
+.sp-crumb__sep { opacity: .5; }
+.sp-seclbl { font-size: 10px; font-weight: 600; color: var(--sp-tx2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+
+/* ===== Écran ADMINISTRATION (direction) ===== */
+/* Barre de filtres : les menus s'alignent et passent à la ligne sur écran étroit. */
+.sp-adminfilters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.sp-adminfilters select { min-width: 150px; }
+/* Rangée de tuiles KPI par équipe (grille responsive : autant de colonnes que la largeur permet). */
+.sp-adminkpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.sp-adminkpi { border: 1px solid var(--sp-line); border-radius: 10px; padding: 12px 14px; }
+.sp-adminkpi__v { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.sp-adminkpi__l { font-size: 12px; color: var(--sp-tx2); margin-top: 4px; }
+/* Deux colonnes (par personne / par projet) côte à côte, empilées si trop étroit. Cartes non cliquables. */
+.sp-admincols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.sp-admincols .sp-card { cursor: default; }
+/* Lignes du récap d'assignations (flex, pour ne pas dépendre d'une grille à colonnes fixes). */
+.sp-arow { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-top: 1px solid var(--sp-line); cursor: pointer; }
+.sp-arow:hover { background: var(--sp-sel); }
+.sp-arow__t { flex: 2 1 0; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-arow__c { flex: 1 1 0; color: var(--sp-tx2); font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-arow__n { width: 92px; text-align: right; color: var(--sp-tx2); font-size: 12.5px; font-variant-numeric: tabular-nums; flex: none; }
+
+/* ===== Propositions « à valider » + sous-onglets Administration ===== */
+/* Sous-onglets = vraie barre d'onglets (style Nextcloud). Les !important neutralisent le style
+   « bouton » global que Nextcloud applique sinon à tout <button> (fond, bordure, ombre, arrondi). */
+.sp-subtabs { display: flex; gap: 2px; border-bottom: 1px solid var(--sp-line); margin: 4px 0 18px; }
+.sp-subtab {
+    display: inline-flex; align-items: center; gap: 6px;
+    width: auto; height: auto; min-height: 0; margin: 0;
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    border-radius: 0 !important; border-bottom: 2px solid transparent !important;
+    color: var(--sp-tx2); padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+}
+.sp-subtab:hover { background: var(--color-background-hover) !important; color: var(--color-main-text); }
+.sp-subtab--on { color: var(--color-primary-element, var(--sp-acc)); border-bottom-color: var(--color-primary-element, var(--sp-acc)) !important; font-weight: 700; }
+/* Badge « à valider » (proposition d'un membre en attente). Ambre, lisible en clair et sombre. */
+.sp-tovalid { display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #c98a2a; background: color-mix(in srgb, #c98a2a 20%, transparent); border: 1px solid color-mix(in srgb, #c98a2a 55%, transparent); border-radius: 9px; padding: 1px 8px; margin-left: 8px; flex: none; }
+/* Ligne d'arbre grisée tant qu'elle n'est pas validée. */
+.sp-row--pending { opacity: .62; }
+/* Bandeau « à valider » dans la fiche (même gabarit que le bandeau de blocage). */
+.sp-validbanner { display: flex; align-items: center; gap: 10px; padding: 8px 11px; border: 1px solid color-mix(in srgb, #c98a2a 50%, transparent); background: color-mix(in srgb, #c98a2a 13%, transparent); border-radius: 6px; }
+.sp-validbanner__t { font-size: 12.5px; color: #c98a2a; flex: 1; }
+/* Boutons compacts dans les lignes/bandeaux (sinon width:130px imposé par Nextcloud). */
+.sp-arow__btn, .sp-validbanner .sp-addbtn, .sp-validbanner .sp-dangerbtn { width: auto; min-height: 0; padding: 5px 12px; font-size: 12px; flex: none; }
+
+/* ===== Détail des saisies + export (écran Administration) ===== */
+/* Barre du dashboard rendue cliquable (ex. cliquer une personne pour la filtrer). */
+.sp-wbar--clic { cursor: pointer; border-radius: 6px; padding: 2px 4px; margin: 0 -4px; }
+.sp-wbar--clic:hover { background: var(--sp-sel); }
+.sp-wbar--clic:hover .sp-wbar__l { text-decoration: underline; }
+/* En-tête du bloc détail : titre à gauche, boutons d'export à droite (repli en colonne si étroit). */
+.sp-detail__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.sp-detail__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sp-detail__actions .sp-ghostbtn { width: auto; min-height: 0; }
+/* Lignes du tableau de détail : grille Date | Personne | Contexte | Heures. Scroll horizontal si trop étroit. */
+.sp-drow { display: grid; grid-template-columns: 92px 170px minmax(160px, 1fr) 74px; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--sp-line); font-size: 12.5px; }
+.sp-drow--h { border-top: none; color: var(--sp-tx2); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.sp-drow__d { font-variant-numeric: tabular-nums; color: var(--sp-tx2); }
+.sp-drow__p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-drow__x { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sp-tx2); }
+.sp-drow__n { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ===== Affectations (plusieurs personnes/groupes par tâche, heures prévues distinctes) ===== */
+/* Une ligne d'affecté dans le panneau détail : qui à gauche, réel/prévu + retrait à droite. */
+.sp-aff { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--sp-line); }
+.sp-aff__who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sp-aff__nom { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-aff__r { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.sp-aff__meta { font-size: 12px; color: var(--sp-tx2); font-variant-numeric: tabular-nums; }
+.sp-aff__meta.sp-over { color: var(--sp-red); font-weight: 600; }
+/* Badge discret « ∑ sous-tâches » : le prévu affiché est le cumul des budgets des sous-tâches. */
+.sp-aff__cumul { font-size: 10px; font-weight: 600; color: var(--sp-tx2); background: var(--color-background-hover); border: 1px solid var(--sp-line); border-radius: 9px; padding: 1px 7px; flex: 0 0 auto; white-space: nowrap; }
+/* Puce rouge « +Xh » de dépassement (réutilisée aussi dans le tableau admin). */
+.sp-aff__over { font-size: 11px; font-weight: 600; color: #fff; background: var(--sp-red); border-radius: 9px; padding: 1px 8px; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+/* Léger fond rouge quand l'affectation dépasse son budget. */
+.sp-aff--over { background: color-mix(in srgb, var(--sp-red) 8%, transparent); border-radius: 6px; padding-left: 6px; padding-right: 6px; margin: 0 -6px; }
+/* Formulaire d'ajout d'affecté : menu + heures + bouton, sur une ligne (repli si étroit). */
+.sp-affadd { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.sp-affadd select { flex: 1 1 150px; min-width: 0; }
+.sp-affadd input { width: 120px; flex: 0 0 auto; }
+/* Ligne « dépassement » du tableau admin : liseré rouge à gauche pour la repérer d'un coup d'œil. */
+.sp-arow--over { box-shadow: inset 3px 0 0 var(--sp-red); }
+
+/* ===== Dépassements : détail dépliable (qui a pointé combien, sur quelle sous-tâche) ===== */
+.sp-depcaret { width: 14px; flex: 0 0 auto; color: var(--sp-tx2); font-size: 10px; }
+/* Bloc détaillé sous une ligne de dépassement (fond légèrement rouge, décalé à gauche). */
+.sp-depdetail { padding: 8px 10px 10px 26px; background: color-mix(in srgb, var(--sp-red) 6%, transparent); border-radius: 0 0 6px 6px; margin-bottom: 4px; }
+/* Un contributeur : en-tête (avatar + nom + total) puis ses lignes de (sous-)tâches. */
+.sp-depc { padding: 6px 0; border-top: 1px solid var(--sp-line); }
+.sp-depc:first-child { border-top: none; }
+.sp-depc__h { display: flex; align-items: center; gap: 8px; }
+.sp-depc__nom { flex: 1; font-size: 12.5px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-depc__tot { font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sp-depc__taches { margin: 4px 0 0 32px; }
+.sp-depc__t { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--sp-tx2); padding: 2px 0; }
+.sp-depc__tt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-depc__th { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
+/* ===== Éditeur d'affectations dans le formulaire de tâche (création/édition) ===== */
+.sp-affedit { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.sp-affeditrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--sp-line); }
+.sp-affedit__nom { flex: 1; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-affedit__h { font-size: 12.5px; color: var(--sp-tx2); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+
+/* ===== Pastille de notification (compteur rouge) sur un sous-onglet ===== */
+.sp-pastille { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 5px; margin-left: 7px; border-radius: 9px; background: var(--sp-red); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 1; }
+
+/* ===== VUE PLANNEUR (Gantt) ===== */
+/* Barre de contrôles (filtre projet, portée, mode, plis, aujourd'hui, zoom). */
+.sp-planctrls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
+.sp-planctrls__z { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+.sp-planctrls .sp-ghostbtn { padding: 5px 11px; min-height: 0; }
+/* Petit sélecteur segmenté réutilisable. */
+.sp-seg { display: inline-flex; border: 1px solid var(--sp-line); border-radius: 7px; overflow: hidden; }
+.sp-seg__b { border: none; background: transparent; color: var(--sp-tx2); font-size: 12.5px; padding: 5px 11px; cursor: pointer; border-right: 1px solid var(--sp-line); min-height: 0; }
+.sp-seg__b:last-child { border-right: none; }
+.sp-seg__b:hover { background: var(--color-background-hover); color: var(--color-main-text); }
+.sp-seg__b--on { background: var(--sp-acc); color: #fff; font-weight: 600; }
+.sp-seg__b--on:hover { background: var(--sp-acc); color: #fff; }
+
+/* Conteneur scrollable du Gantt. --plan-name = largeur de la colonne des noms (figée), --plan-row = hauteur d'une ligne. */
+.sp-gantt { --plan-name: 250px; --plan-row: 32px; position: relative; overflow: auto; max-height: calc(100vh - 240px); border: 1px solid var(--sp-line); border-radius: 10px; background: var(--color-main-background); }
+/* En-tête collant : coin figé + 2 bandes (haut = mois/année, bas = jours/semaines/mois/trimestres selon le zoom). */
+.sp-gantt__header { display: flex; position: sticky; top: 0; z-index: 3; background: var(--color-main-background); box-shadow: 0 1px 0 var(--sp-line); width: max-content; min-width: 100%; }
+.sp-gantt__corner { width: var(--plan-name); flex: 0 0 auto; position: sticky; left: 0; z-index: 4; background: var(--color-main-background); border-right: 1px solid var(--sp-line); display: flex; align-items: flex-end; padding: 0 12px 7px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--sp-tx2); box-sizing: border-box; }
+.sp-gantt__bands { display: flex; flex-direction: column; }
+.sp-gantt__band { display: flex; }
+.sp-gantt__band--top { height: 24px; border-bottom: 1px solid var(--sp-line); }
+.sp-gantt__band--bot { height: 30px; }
+.sp-gantt__cell { flex: 0 0 auto; box-sizing: border-box; border-right: 1px solid color-mix(in srgb, var(--sp-line) 65%, transparent); display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; overflow: hidden; white-space: nowrap; }
+/* Bande du haut : le libellé est « collant » (reste lisible à gauche tant que sa tranche est visible). overflow doit rester visible pour ça. */
+.sp-gantt__band--top .sp-gantt__cell { align-items: flex-start; overflow: visible; border-right-color: var(--sp-line); }
+.sp-gantt__ctop { position: sticky; left: var(--plan-name); padding: 0 9px; font-size: 11.5px; font-weight: 600; color: var(--color-main-text); }
+.sp-gantt__cnum { font-size: 11px; color: var(--color-main-text); line-height: 1.15; }
+.sp-gantt__csub { font-size: 9px; color: var(--sp-tx2); line-height: 1.1; margin-top: 1px; }
+.sp-gantt__cell--we { background: rgba(127, 127, 127, .07); }
+.sp-gantt__cell--we .sp-gantt__cnum { color: var(--sp-tx2); }
+/* Aujourd'hui : le numéro du jour dans une pastille bleue. */
+.sp-gantt__cell--today .sp-gantt__cnum { background: var(--sp-acc); color: #fff; border-radius: 999px; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 3px; box-sizing: border-box; font-weight: 600; }
+
+/* Corps : grille de fond (une couche absolue derrière les lignes) + lignes.
+   width:max-content : lignes et en-tête font TOUTE la largeur de la frise (pas seulement celle de l'écran),
+   sinon la colonne des noms (position:sticky) est « poussée » hors de sa ligne dès qu'on défile à droite. */
+.sp-gantt__body { position: relative; width: max-content; min-width: 100%; }
+.sp-gantt__grid { position: absolute; top: 0; bottom: 0; left: var(--plan-name); pointer-events: none; }
+.sp-gantt__gwe { position: absolute; top: 0; bottom: 0; background: rgba(127, 127, 127, .06); }
+.sp-gantt__gline { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid color-mix(in srgb, var(--sp-line) 65%, transparent); }
+.sp-gantt__gline--strong { border-left-color: color-mix(in srgb, var(--sp-tx2) 45%, transparent); }
+.sp-gantt__gtoday { position: absolute; top: 0; bottom: 0; box-sizing: border-box; background: color-mix(in srgb, var(--sp-acc) 7%, transparent); border-left: 2px solid var(--sp-acc); }
+
+/* Lignes. */
+.sp-gantt__row { display: flex; height: var(--plan-row); align-items: stretch; width: max-content; min-width: 100%; position: relative; border-bottom: 1px solid color-mix(in srgb, var(--sp-line) 55%, transparent); }
+.sp-gantt__row:hover .sp-gantt__name { background: var(--color-background-hover); }
+.sp-gantt__row:hover .sp-gantt__lane { background: rgba(127, 127, 127, .05); }
+.sp-gantt__row--grp .sp-gantt__lane { background: rgba(127, 127, 127, .035); }
+.sp-gantt__name { width: var(--plan-name); flex: 0 0 auto; position: sticky; left: 0; z-index: 2; background: var(--color-main-background); box-shadow: -3px 0 0 var(--color-main-background); border-right: 1px solid var(--sp-line); display: flex; align-items: center; gap: 6px; padding-right: 10px; overflow: hidden; box-sizing: border-box; }
+.sp-gantt__name--l0 { padding-left: 6px; font-weight: 600; }
+.sp-gantt__name--l1 { padding-left: 24px; }
+.sp-gantt__name--l2 { padding-left: 42px; }
+.sp-gantt__name--l3 { padding-left: 60px; }
+/* Flèche de pli : un triangle qui pivote quand c'est déplié. */
+.sp-gantt__caret { width: 18px; height: 18px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; color: var(--sp-tx2); font-size: 11px; cursor: pointer; border-radius: 4px; transition: transform .12s; }
+.sp-gantt__caret:hover { background: var(--color-background-hover); color: var(--color-main-text); }
+.sp-gantt__caret--open { transform: rotate(90deg); }
+.sp-gantt__caret--none { cursor: default; }
+.sp-gantt__caret--none:hover { background: transparent; }
+.sp-gantt__cdot { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; }
+.sp-gantt__lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.sp-gantt__lbl--link { cursor: pointer; }
+.sp-gantt__lbl--link:hover { text-decoration: underline; }
+.sp-gantt__cnt { margin-left: auto; flex: 0 0 auto; font-size: 10.5px; font-weight: 500; color: var(--sp-tx2); background: var(--sp-chip); border-radius: 999px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
+/* Couloir + barre (sans contour : juste la couleur de la phase). */
+.sp-gantt__lane { position: relative; flex: 0 0 auto; }
+/* overflow reste visible : le libellé est « collant » (il reste lisible quand la barre commence hors écran) ; c'est lui qui se tronque. */
+.sp-gantt__bar { position: absolute; top: 6px; height: 20px; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; transition: filter .12s; }
+.sp-gantt__bar:hover { filter: brightness(1.12); }
+.sp-gantt__barlbl { position: sticky; left: calc(var(--plan-name) + 2px); max-width: 100%; box-sizing: border-box; color: #fff; font-size: 11.5px; padding: 0 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Barre « résumé » (projet / phase / personne) : fine et translucide, elle ne se clique pas. */
+.sp-gantt__bar--grp { top: 12px; height: 8px; border-radius: 4px; cursor: default; }
+.sp-gantt__bar--grp:hover { filter: none; }
+.sp-gantt__bar--done { opacity: .45; }
+.sp-gantt__bar--done .sp-gantt__barlbl { text-decoration: line-through; }
+.sp-gantt__empty { padding: 26px; color: var(--sp-tx2); font-size: 13px; text-align: center; }
+/* Section « non planifiées ». */
+.sp-planp { margin-top: 14px; border: 1px solid var(--sp-line); border-radius: 8px; padding: 6px 12px 10px; }
+.sp-planp__head { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 0; }
+
+/* Ligne de proposition (Notifications) : titre + méta (contexte, référent recommandé, dates) sur 2 lignes. */
+.sp-arow--prop { align-items: center; }
+.sp-prop__b { flex: 1; min-width: 0; }
+.sp-prop__t { font-weight: 500; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-prop__t:hover { text-decoration: underline; }
+.sp-prop__m { font-size: 12px; color: var(--sp-tx2); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Mes heures : valeur en lecture seule + édition volontaire (✎ → champ + ✓/✕). */
+.sp-hrow2__hc { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.sp-hrow2__val { font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; font-size: 13px; color: var(--color-main-text); }
+
+/* Tuiles KPI : éviter le titre tronqué (« PROJETS A… ») et la valeur qui déborde sur les petites cartes. */
+.sp-widget--kpi .sp-widget__h { align-items: flex-start; padding: 9px 12px 2px; }
+/* Titre sur 2 lignes max (au lieu d'une coupe à mi-mot). */
+.sp-widget--kpi .sp-widget__t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.18; font-size: 10px; }
+.sp-widget--kpi .sp-widget__b { padding: 0 12px 8px; }
+/* Valeur : jamais coupée sur 2 lignes, taille un peu réduite pour tenir sur une carte étroite. */
+.sp-kpi__v { white-space: nowrap; font-size: 26px; }
+.sp-kpi__s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-widget--kpi .sp-widget__h .sp-widget__f { font-size: 10px; padding: 1px 6px; }
+
+/* ===== Aide contextuelle : bouton « ? » + info-bulle légère (style Nextcloud) ===== */
+.sp-tith { display: flex; align-items: center; gap: 9px; }
+.sp-lblrow { display: flex; align-items: center; gap: 7px; }
+.sp-help { width: 17px; height: 17px; min-width: 17px; padding: 0; border-radius: 50%; border: 1px solid var(--sp-line); background: transparent; color: var(--sp-tx2); font-size: 11px; font-weight: 700; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.sp-help:hover { background: var(--color-primary-element, var(--sp-acc)); border-color: transparent; color: #fff; }
+/* Info-bulle : positionnée en fixed par le JS (coordonnées viewport). */
+.sp-help__pop { position: fixed; z-index: 1000; width: 280px; max-width: calc(100vw - 16px); background: var(--color-main-background); border: 1px solid var(--sp-line); border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, .18); padding: 10px 12px; }
+.sp-help__txt { white-space: pre-line; font-size: 12.5px; line-height: 1.45; color: var(--sp-tx2); }
+
+/* Précision (ce qui a été fait) affichée en entier sous une ligne du détail admin des saisies. */
+.sp-drow__note { padding: 2px 0 8px 92px; font-size: 12px; line-height: 1.4; color: var(--sp-tx2); }
+.sp-drow__notelbl { font-weight: 600; color: var(--color-main-text); }
+
+/* Édition d'une saisie (Mes heures / admin) : champ « précision » pleine largeur sous le titre. */
+.sp-hprec { width: 100%; margin-top: 4px; box-sizing: border-box; }
+.sp-hrow2--edit .sp-hrow2__b { flex: 1; min-width: 0; }
+
+/* Sous-menu « Administration » (déroulé dans le menu de gauche quand on est sur l'écran Admin). */
+.sp-navsub { display: flex; align-items: center; gap: 9px; padding: 6px 18px 6px 34px; cursor: pointer; font-size: 13px; color: var(--sp-tx2); border-radius: 0 6px 6px 0; margin-right: 10px; }
+.sp-navsub:hover { background: var(--color-background-hover); }
+.sp-navsub--on { background: var(--sp-sel); color: var(--color-main-text); font-weight: 600; }
+.sp-navsub .sp-navtxt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Menu déroulant avec recherche (combobox) : sélecteur de personne quand il y a beaucoup de monde. */
+.sp-ssel { position: relative; min-width: 200px; }
+.sp-ssel__inp { width: 100%; box-sizing: border-box; }
+.sp-ssel__menu { position: absolute; z-index: 60; left: 0; right: 0; top: calc(100% + 3px); max-height: 260px; overflow-y: auto; background: var(--color-main-background); border: 1px solid var(--sp-line); border-radius: 8px; box-shadow: 0 8px 26px rgba(0, 0, 0, .20); padding: 4px; }
+.sp-ssel__opt { padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-ssel__opt:hover { background: var(--color-background-hover); }
+.sp-ssel__opt--on { background: var(--sp-sel); font-weight: 600; }
+.sp-ssel__empty { padding: 8px 10px; color: var(--sp-tx2); font-size: 12.5px; }
+
+/* =====================================================================
+   RESPONSIVE MOBILE (≤ 760px) : la barre latérale devient un TIROIR
+   ouvert par un bouton « burger ». Utilisé notamment dans la webview de
+   l'app Nextcloud native (Android/iOS) qui ouvre l'UI en plein téléphone.
+   ===================================================================== */
+/* Sur desktop : ni burger ni voile. */
+.sp-burger { display: none; }
+.sp-navbackdrop { display: none; }
+
+@media (max-width: 760px) {
+    /* CLÉ : tout ce qui est en position:fixed doit démarrer SOUS le bandeau Nextcloud
+       (variable NC --header-height, 50px par défaut) pour ne pas le chevaucher — sinon
+       le haut du tiroir et surtout le bouton ✕ du panneau détail passent DERRIÈRE le
+       header NC (impossible de fermer une tâche). */
+
+    /* Barre latérale : tiroir hors-écran qui glisse depuis la gauche, sous le header NC.
+       NE PAS ajouter bottom:0 ici : top + bottom + height ensemble sur un élément fixed
+       est sur-contraint et certains moteurs décalent alors le rendu (le haut remontait
+       sous le header). top + height:calc suffisent pour occuper toute la hauteur utile. */
+    .sp-side {
+        position: fixed; left: 0; top: var(--header-height, 50px);
+        height: calc(100% - var(--header-height, 50px));
+        width: 250px; max-width: 82vw; z-index: 3500;
+        transform: translateX(-100%); transition: transform .22s ease;
+        box-shadow: 2px 0 26px rgba(0, 0, 0, .3);
+    }
+    .sp-layout.sp-navopen .sp-side { transform: none; }
+    /* Voile sombre derrière le tiroir ouvert (sous le header NC lui aussi). */
+    .sp-navbackdrop { position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-height, 50px); z-index: 3400; background: rgba(0, 0, 0, .42); }
+    .sp-layout.sp-navopen .sp-navbackdrop { display: block; }
+    /* Le contenu occupe toute la largeur (le tiroir est en surimpression). */
+    .sp-main { padding: 54px 14px 40px; }
+    /* Bouton burger : fixe juste sous le header NC. z-index sous les modales (3000)
+       pour qu'un panneau ouvert le recouvre, au-dessus du contenu normal. */
+    .sp-burger {
+        display: flex; align-items: center; justify-content: center;
+        position: fixed; top: calc(var(--header-height, 50px) + 7px); left: 10px; z-index: 2500;
+        width: 40px; height: 40px; padding: 0; border-radius: 9px;
+        border: 1px solid var(--sp-line); background: var(--color-main-background);
+        color: var(--color-main-text); font-size: 17px; line-height: 1; cursor: pointer;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, .14);
+    }
+    /* Panneau détail + modales : démarrent SOUS le header NC → barre de titre et ✕
+       restent visibles et atteignables (le panneau est en pleine largeur sur mobile,
+       donc il n'y a pas de voile à toucher : le ✕ est la seule sortie). */
+    .sp-pnl__wrap { top: var(--header-height, 50px); }
+    /* ✕ agrandi = cible tactile confortable. */
+    .sp-pnl__x { font-size: 20px; padding: 8px 12px; }
+    /* Panneaux/formulaires : marges internes réduites pour gagner de la largeur. */
+    .sp-psec, .sp-pnl__head { padding-left: 16px; padding-right: 16px; }
+    /* Rangées à deux champs (ex. date + heures) → empilées sur une colonne. */
+    .sp-mrow { flex-direction: column; }
+}
+
+/* ===== Liens & documents (fiche tâche) ===== */
+.sp-lien { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--sp-line); }
+.sp-lien:first-of-type { border-top: none; }
+.sp-lien__type { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--sp-tx2); border: 1px solid var(--sp-line); border-radius: 9px; padding: 1px 7px; flex: 0 0 auto; }
+.sp-lien__a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.sp-lien__add { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.sp-lien__add .sp-pbtn2 { width: auto; min-height: 0; }

@@ -1,0 +1,14 @@
+/* SPDX-FileCopyrightText: 2026 Flavien Auvray
+ * SPDX-License-Identifier: AGPL-3.0-or-later */
+/* Tuile l'association sur le tableau de bord d'accueil de Nextcloud. Couleurs = variables NC. */
+.tp-dashw { display: flex; flex-direction: column; gap: 6px; }
+.tp-dashw-bloc { display: block; color: var(--color-error, #c4362a); font-size: 13px; font-weight: 600; padding: 4px 0; text-decoration: none; }
+.tp-dashw-bloc:hover { text-decoration: underline; }
+.tp-dashw-row { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--color-main-text); font-size: 13px; padding: 3px 0; }
+.tp-dashw-row:hover { opacity: .75; }
+.tp-dashw-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.tp-dashw-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-dashw-track { width: 70px; height: 6px; border-radius: 3px; background: var(--color-background-dark); overflow: hidden; flex: 0 0 auto; }
+.tp-dashw-fill { display: block; height: 100%; background: var(--color-primary-element); border-radius: 3px; }
+.tp-dashw-pct { width: 34px; text-align: right; color: var(--color-text-maxcontrast); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.tp-dashw-empty { color: var(--color-text-maxcontrast); font-size: 13px; }

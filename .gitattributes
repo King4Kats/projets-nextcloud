@@ -1,0 +1,4 @@
+# Fins de ligne Unix pour les scripts lancés dans Docker / sous Linux (sinon « \r » invisibles).
+* text=auto eol=lf
+*.png binary
+*.svg text eol=lf

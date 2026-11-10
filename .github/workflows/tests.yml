@@ -1,0 +1,21 @@
+# Intégration continue : à chaque envoi (push) et à chaque pull request, GitHub lance les tests
+# sur une machine Linux neuve. Si un test échoue, le commit est marqué d'une croix rouge.
+#
+# Même chose qu'en local avec ./scripts/tester.sh : syntaxe, puis test des droits sur une
+# installation Nextcloud neuve dans Docker, remplie avec les projets d'exemple (≈ 3 à 5 min).
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+      # Docker, Python 3 et Node sont déjà installés sur les machines Ubuntu de GitHub.
+      - name: Syntaxe et droits
+        run: ./scripts/tester.sh

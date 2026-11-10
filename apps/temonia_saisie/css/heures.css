@@ -1,0 +1,189 @@
+/* SPDX-FileCopyrightText: 2026 Flavien Auvray
+ * SPDX-License-Identifier: AGPL-3.0-or-later */
+/* l'association — écran « Heures » (voir js/heures.js). Design sobre : peu de couleurs, des lignes fines,
+   la couleur principale réservée à l'action et à la sélection.
+   • Téléphone (< 900 px) : deux onglets « Saisir / Mes heures », bouton Enregistrer collé en bas.
+   • Ordinateur (≥ 900 px) : saisie à gauche, récapitulatif à droite, sans onglets.
+   Toutes les règles commencent par #th-app : c'est plus « fort » que les styles par défaut des
+   boutons et champs de Nextcloud, qui sinon déformeraient l'écran. Couleurs = variables du thème
+   Nextcloud → clair ET sombre automatiquement. */
+#th-app {
+    --th-acc: var(--color-primary-element, #002B5C);       /* couleur principale (bleu marine l'association) */
+    --th-acc-tx: var(--color-primary-element-text, #fff);  /* texte posé sur la couleur principale */
+    --th-acc-doux: color-mix(in srgb, var(--th-acc) 9%, transparent);
+    --th-line: var(--color-border, #e3e3e3);
+    --th-tx2: var(--color-text-maxcontrast, #6b6b6b);
+    --th-fond2: var(--color-background-hover, #f5f5f5);
+    --th-red: #C4362A;
+    --th-r: 10px;                                          /* arrondi commun */
+    /* Conteneur de la hauteur de l'écran (moins le bandeau Nextcloud de 50 px) qui défile en interne,
+       comme l'appli Projets. 100dvh = hauteur VISIBLE sur téléphone (sans la barre d'adresse). */
+    height: calc(100vh - 50px); height: calc(100dvh - 50px);
+    overflow-y: auto; overflow-x: hidden;
+    width: 100%; flex: 1 1 auto; box-sizing: border-box; margin: 0; padding: 0;
+    background: var(--color-main-background);
+    color: var(--color-main-text);
+    font-size: 15px;
+    -webkit-tap-highlight-color: transparent;
+}
+#th-app *, #th-app *::before, #th-app *::after { box-sizing: border-box; }
+#th-app button { font: inherit; }
+
+#th-app .th-page { max-width: 1040px; margin: 0 auto; padding: 16px 16px 0; }
+
+/* ---- En-tête ---- */
+#th-app .th-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+#th-app .th-title { margin: 0; font-size: 22px; font-weight: 650; line-height: 1.2; }
+#th-app .th-sub { margin-top: 2px; font-size: 13.5px; color: var(--th-tx2); }
+#th-app .th-lien { padding: 7px 14px; border: 1px solid var(--th-line); border-radius: 18px; font-size: 13.5px; font-weight: 600; color: var(--color-main-text); text-decoration: none; white-space: nowrap; }
+#th-app .th-lien:hover { background: var(--th-fond2); }
+
+/* ---- Onglets (téléphone) ---- */
+#th-app .th-onglets { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 18px; border-radius: 12px; background: var(--th-fond2); }
+#th-app .th-onglet { min-height: 40px; height: 40px; width: auto; margin: 0; padding: 0 8px; border: none; border-radius: 9px; background: transparent; color: var(--th-tx2); font-size: 14.5px; font-weight: 600; cursor: pointer; }
+#th-app .th-onglet--on { background: var(--color-main-background); color: var(--color-main-text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+
+#th-app .th-h2 { display: none; margin: 0 0 18px; font-size: 16px; font-weight: 650; }
+
+/* ---- Champs de saisie ---- */
+#th-app .th-champ { margin-bottom: 18px; min-width: 0; }
+#th-app .th-lbl { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--th-tx2); }
+#th-app .th-lbl__aide { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
+#th-app .th-lbl__aide::first-letter { text-transform: uppercase; }
+
+/* Menus déroulants : un nom trop long est coupé par « … » au lieu de déborder de l'écran.
+   appearance: none retire le style du système ; on redessine la flèche en image de fond. */
+#th-app select.th-select {
+    display: block; width: 100%; max-width: 100%; min-width: 0; height: 46px; min-height: 46px; margin: 0;
+    padding: 0 38px 0 12px; border: 1px solid var(--th-line); border-radius: var(--th-r);
+    font-size: 16px; /* 16 px : sinon l'iPhone zoome dans le champ */ font-weight: 500;
+    color: var(--color-main-text); background-color: var(--color-main-background);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    -webkit-appearance: none; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
+}
+#th-app select.th-select:focus, #th-app input.th-input:focus { border-color: var(--th-acc); outline: 2px solid var(--th-acc-doux); }
+#th-app select.th-select[disabled] { color: var(--th-tx2); background-color: var(--th-fond2); cursor: default; }
+
+#th-app input.th-input { display: block; width: 100%; height: 46px; min-height: 46px; margin: 0; padding: 0 12px; border: 1px solid var(--th-line); border-radius: var(--th-r); font-size: 16px; color: var(--color-main-text); background: var(--color-main-background); }
+
+/* Jour : contrôle segmenté Aujourd'hui | Hier | date */
+#th-app .th-seg { display: grid; grid-template-columns: 1fr 1fr 1.25fr; border: 1px solid var(--th-line); border-radius: var(--th-r); overflow: hidden; }
+#th-app .th-seg__btn { width: auto; min-width: 0; height: 44px; min-height: 44px; margin: 0; padding: 0 6px; border: none; border-radius: 0; border-left: 1px solid var(--th-line); background: var(--color-main-background); color: var(--color-main-text); font-size: 14.5px; font-weight: 500; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#th-app .th-seg__btn:first-child { border-left: none; }
+#th-app .th-seg__btn--on { background: var(--th-acc); color: var(--th-acc-tx); font-weight: 600; }
+#th-app input.th-seg__date { font-size: 14px; text-align: center; box-shadow: none; outline: none; }
+#th-app input.th-seg__date::-webkit-calendar-picker-indicator { margin-left: 2px; opacity: .6; cursor: pointer; }
+#th-app input.th-seg__date.th-seg__btn--on::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .9; }
+
+/* Durée : − valeur + puis raccourcis */
+#th-app .th-duree { display: flex; flex-direction: column; gap: 10px; }
+#th-app .th-pas { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--th-line); border-radius: var(--th-r); padding: 4px; }
+#th-app .th-pas__btn { flex: 0 0 auto; width: 52px; min-width: 52px; height: 48px; min-height: 48px; margin: 0; padding: 0; border: none; border-radius: 8px; background: var(--th-fond2); color: var(--color-main-text); font-size: 24px; font-weight: 500; line-height: 1; cursor: pointer; }
+#th-app .th-pas__btn:hover { background: var(--th-acc-doux); }
+#th-app .th-pas__val { flex: 1 1 auto; text-align: center; font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+#th-app .th-raccourcis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+#th-app .th-puce { width: auto; min-width: 0; height: 36px; min-height: 36px; margin: 0; padding: 0 4px; border: 1px solid var(--th-line); border-radius: 18px; background: var(--color-main-background); color: var(--color-main-text); font-size: 13.5px; font-weight: 500; cursor: pointer; }
+#th-app .th-puce:hover { border-color: var(--th-acc); }
+#th-app .th-puce--on { background: var(--th-acc-doux); border-color: var(--th-acc); color: var(--th-acc); font-weight: 650; }
+
+/* Bouton principal. Téléphone : collé en bas pendant le défilement (au-dessus de la barre de gestes). */
+#th-app .th-barre { position: sticky; bottom: 0; z-index: 2; margin: 4px -16px 0; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--color-main-background); border-top: 1px solid var(--th-line); }
+#th-app .th-btn { display: block; width: 100%; height: 50px; min-height: 50px; margin: 0; padding: 0 16px; border: none; border-radius: var(--th-r); background: var(--th-acc); color: var(--th-acc-tx); font-size: 16px; font-weight: 650; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#th-app .th-btn:hover { filter: brightness(1.08); }
+#th-app .th-btn[disabled] { opacity: .6; cursor: default; }
+
+/* ---- Récapitulatif ---- */
+#th-app .th-panneau--recap { padding-bottom: 24px; min-width: 0; }
+/* Filtres : période (Semaine | Mois | Année) et projet */
+#th-app .th-filtres { display: grid; grid-template-columns: 1fr; gap: 10px; }
+#th-app .th-seg--periode { grid-template-columns: 1fr 1fr 1fr; }
+#th-app select.th-select--petit { height: 44px; min-height: 44px; font-size: 15px; }
+/* Navigation dans le temps : ‹ Octobre 2026 › [Aujourd'hui] */
+#th-app .th-semnav { display: flex; align-items: center; gap: 4px; margin-top: 14px; }
+#th-app .th-semnav__t { min-width: 130px; text-align: center; font-size: 15px; font-weight: 650; }
+#th-app .th-icone { flex: 0 0 auto; width: 36px; min-width: 36px; height: 36px; min-height: 36px; margin: 0; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--th-tx2); font-size: 17px; line-height: 1; cursor: pointer; }
+#th-app .th-icone:hover:not([disabled]) { background: var(--th-fond2); color: var(--color-main-text); }
+#th-app .th-icone[disabled] { opacity: .3; cursor: default; }
+#th-app .th-icone--suppr:hover { color: var(--th-red); }
+#th-app .th-icone--arme, #th-app .th-icone--arme:hover { width: auto; padding: 0 10px; background: var(--th-red); color: #fff; font-size: 13px; font-weight: 650; }
+
+#th-app .th-total { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; margin: 12px 0 16px; }
+#th-app .th-export { margin-left: auto; align-self: center; }
+#th-app .th-total__v { font-size: 30px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1; }
+#th-app .th-total__p { font-size: 13.5px; color: var(--th-tx2); }
+
+#th-app .th-soustitre { font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--th-tx2); }
+#th-app .th-soustitre--detail { margin-top: 18px; }
+#th-app .th-projets { display: flex; flex-direction: column; gap: 8px; padding: 14px 0 16px; border-top: 1px solid var(--th-line); border-bottom: 1px solid var(--th-line); margin-bottom: 8px; }
+#th-app .th-projet { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(60px, 1fr) auto; align-items: center; gap: 12px; font-size: 14px; }
+#th-app .th-projet__n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#th-app .th-projet__barre { height: 6px; border-radius: 3px; background: var(--th-fond2); overflow: hidden; }
+#th-app .th-projet__rempli { display: block; height: 100%; border-radius: 3px; background: var(--th-acc); }
+#th-app .th-projet__h { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+
+#th-app .th-jourhead { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 4px; font-size: 13px; font-weight: 600; color: var(--th-tx2); }
+#th-app .th-jourhead__d::first-letter { text-transform: uppercase; }
+#th-app .th-ligne { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--th-line); }
+#th-app .th-ligne__b { flex: 1 1 auto; min-width: 0; }
+#th-app .th-ligne__t { font-size: 14.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#th-app .th-ligne__m { margin-top: 2px; font-size: 13px; color: var(--th-tx2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#th-app .th-ligne__h { flex: 0 0 auto; margin: 0 4px 0 8px; font-size: 14.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+#th-app .th-ligne--edit { flex-direction: column; align-items: stretch; gap: 10px; margin: 6px 0; padding: 12px; border: 1px solid var(--th-acc); border-radius: var(--th-r); background: var(--th-acc-doux); }
+#th-app .th-pas--petit { background: var(--color-main-background); }
+#th-app .th-pas--petit .th-pas__btn { width: 44px; min-width: 44px; height: 40px; min-height: 40px; font-size: 20px; }
+#th-app .th-pas--petit .th-pas__val { font-size: 20px; }
+#th-app .th-editbtns { display: flex; justify-content: flex-end; gap: 8px; }
+#th-app .th-btn2 { width: auto; height: 38px; min-height: 38px; margin: 0; padding: 0 16px; border: 1px solid var(--th-line); border-radius: 8px; background: var(--color-main-background); color: var(--color-main-text); font-size: 14px; font-weight: 600; cursor: pointer; }
+#th-app .th-btn2--plein { border-color: var(--th-acc); background: var(--th-acc); color: var(--th-acc-tx); }
+#th-app .th-btn2--petit { height: 32px; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 16px; }
+#th-app .th-btn2:hover { border-color: var(--th-acc); }
+
+/* Vue année : une ligne cliquable par mois */
+#th-app .th-moisligne { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; margin: 0; padding: 8px 4px; border: none; border-bottom: 1px solid var(--th-line); border-radius: 0; background: transparent; color: var(--color-main-text); text-align: left; cursor: pointer; }
+#th-app .th-moisligne:hover { background: var(--th-fond2); }
+#th-app .th-moisligne__n { flex: 1 1 auto; font-size: 14.5px; font-weight: 600; }
+#th-app .th-moisligne__c { font-size: 13px; color: var(--th-tx2); }
+#th-app .th-moisligne__h { min-width: 56px; text-align: right; font-size: 14.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+#th-app .th-moisligne__f { color: var(--th-tx2); font-size: 18px; }
+
+#th-app .th-vide { margin: 14px 0; color: var(--th-tx2); font-size: 14px; }
+
+/* ---- Téléphone : un onglet à la fois ---- */
+@media (max-width: 899px) {
+    #th-app .th-page--saisir .th-panneau--recap,
+    #th-app .th-page--recap .th-panneau--saisir { display: none; }
+    /* icônes du récap un peu plus grandes sous le pouce */
+    #th-app .th-ligne .th-icone { width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
+}
+
+/* ---- Ordinateur : saisie à gauche, récap à droite ---- */
+@media (min-width: 900px) {
+    #th-app .th-page { padding: 28px 32px 32px; }
+    #th-app .th-head { margin-bottom: 24px; }
+    #th-app .th-onglets { display: none; }
+    #th-app .th-h2 { display: block; }
+    #th-app .th-grille { display: grid; grid-template-columns: minmax(340px, 400px) minmax(0, 1fr); gap: 28px; align-items: start; }
+    #th-app .th-panneau { padding: 22px 24px; border: 1px solid var(--th-line); border-radius: 14px; background: var(--color-main-background); }
+    #th-app .th-panneau--saisir { position: sticky; top: 0; }
+    #th-app .th-filtres { grid-template-columns: minmax(220px, 1fr) minmax(0, 1fr); }
+    #th-app select.th-select, #th-app input.th-input { font-size: 15px; height: 42px; min-height: 42px; }
+    #th-app .th-seg__btn { height: 40px; min-height: 40px; font-size: 14px; }
+    #th-app .th-pas__btn { height: 42px; min-height: 42px; width: 46px; min-width: 46px; font-size: 22px; }
+    #th-app .th-pas__val { font-size: 22px; }
+    #th-app .th-puce { height: 32px; min-height: 32px; }
+    #th-app .th-barre { position: static; margin: 6px 0 0; padding: 0; border-top: none; background: transparent; }
+    #th-app .th-btn { height: 44px; min-height: 44px; font-size: 15px; }
+}
+
+/* ---- Message temporaire ---- */
+#th-app .th-toast {
+    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 10;
+    max-width: calc(100% - 32px); padding: 10px 16px; border-radius: var(--th-r);
+    background: var(--color-main-text); color: var(--color-main-background); font-size: 14px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    transition: opacity .3s;
+}
+@media (min-width: 900px) { #th-app .th-toast { bottom: 32px; } }
+#th-app .th-toast--err { background: var(--th-red); color: #fff; }
+#th-app .th-toast--out { opacity: 0; }
