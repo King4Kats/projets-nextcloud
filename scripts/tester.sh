@@ -54,8 +54,8 @@ docker run -d --name "$CONTENEUR" -p "$PORT:80" \
   -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
   -v "$CONTENEUR-data:/var/www/html" "$IMAGE" >/dev/null
 
-# On attend la fin du hook post-installation, au plus 5 minutes.
-for _ in $(seq 1 100); do
+# On attend la fin du hook post-installation, au plus 10 minutes (les machines GitHub sont parfois lentes).
+for _ in $(seq 1 200); do
   if [[ "$(docker inspect -f '{{.State.Running}}' "$CONTENEUR")" != "true" ]]; then
     echo "✗ Le conteneur s'est arrêté pendant l'installation :"; docker logs "$CONTENEUR" 2>&1 | tail -40; exit 1
   fi
